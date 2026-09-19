@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0D0D0D">
+<title>Echo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-512.png">
+<style>
+@font-face{font-family:"Atkinson";src:url("font.woff2") format("woff2");font-display:swap}
+:root{
+  --bg:#0D0D0D;--surf:#181818;--surf2:#232323;--line:#2E2E2E;--text:#EDEDED;--mute:#8E8E8E;
+  --bright:#B79CF0;--mid:#7E5FB8;--deep:#4A2F6E;--core:#F3EEFF;
+  --hot:#EDE4FF;--warm:#B79CF0;--cool:#7E5FB8;--cold:#3E3150;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:"Atkinson",system-ui,sans-serif;font-size:17px;line-height:1.4}
+body{display:flex;flex-direction:column;overscroll-behavior:none}
+main{flex:1;overflow-y:auto;padding:18px 16px 96px}
+body.set main{background:var(--deep)}
+.tab{display:none}.tab.on{display:block}
+nav{display:flex;border-top:1px solid var(--line);background:var(--bg);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:15px 0;background:none;border:0;color:var(--mute);font:inherit;font-size:15px}
+nav button.on{color:var(--bright);font-weight:700}
+h1{font-size:24px;color:var(--bright);margin-bottom:14px}
+h2{font-size:17px;color:var(--bright);margin:22px 0 8px}
+p{margin-bottom:8px}
+label{display:block;font-size:14px;color:var(--mute);margin:14px 0 6px}
+input,textarea{width:100%;background:var(--surf);border:1px solid var(--line);color:var(--text);font:inherit;padding:12px;border-radius:10px;outline:none}
+input:focus,textarea:focus{border-color:var(--mid)}
+textarea{resize:vertical;min-height:160px}
+body.set input,body.set textarea{background:#2E1D45;border-color:#5E4386}
+.btn{display:block;width:100%;padding:14px;border-radius:10px;border:0;background:var(--mid);color:var(--core);font:inherit;font-weight:700;margin-top:18px}
+.btn.ghost{background:none;border:1px solid #6B4F94;color:var(--text);font-weight:400;margin-top:12px}
+.btn.danger{background:none;border:1px solid #7A3B3B;color:#E8A2A2;font-weight:400;margin-top:12px}
+.hint{font-size:13px;color:var(--mute);margin-top:10px}
+body.set .hint{color:#B9A8D6}
+hr{border:0;border-top:1px solid #6B4F94;margin:26px 0 8px}
+.empty{color:var(--mute);text-align:center;padding:40px 12px}
+.inrow{display:flex;gap:8px}
+.inrow input{flex:1;min-width:0}
+.pill{flex:none;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--surf);color:var(--mute);font:inherit;font-size:15px}
+.pill[aria-pressed="true"]{background:var(--deep);border-color:var(--bright);color:var(--core)}
+/* crate */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none}
+.chips.wrap{flex-wrap:wrap;overflow:visible}
+.chip{flex:none;padding:6px 13px;border-radius:999px;background:var(--surf2);color:var(--text);border:1px solid var(--line);font:inherit;font-size:14px}
+.chip.on{background:var(--deep);border-color:var(--bright)}
+.chip .x{margin-left:6px;color:var(--mute)}
+.chip.add{color:var(--bright);border-style:dashed}
+.head{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.head button{background:none;border:0;color:var(--bright);font:inherit;font-size:30px;line-height:1;padding:0 10px 0 0}
+.head .hb{flex:1;min-width:0}
+.crumb{font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crumb:empty{display:none}
+.nm{font-size:22px;font-weight:700;background:none;border:1px solid transparent;padding:2px 0;border-radius:6px}
+.nm:focus{border-color:var(--mid);padding:2px 8px;background:var(--surf)}
+.list{margin-top:10px}
+.grp{font-size:14px;font-weight:700;color:var(--bright);margin:16px 0 8px}
+.row{display:flex;gap:12px;align-items:center;background:var(--surf);border-radius:10px;margin-bottom:8px;padding:0 12px 0 0;min-height:52px;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.row .t{width:5px;align-self:stretch;flex:none;border-radius:0 4px 4px 0;margin:8px 0}
+.row .b{flex:1;min-width:0;padding:12px 0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .chev{color:var(--mute);font-size:22px}
+.row.sel{background:#3A2A52}
+.row.pend{outline:2px solid var(--bright);outline-offset:-2px}
+.pb{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--mid);background:none}
+.pb.on{background:var(--bright);border-color:var(--bright)}
+#selbar{position:fixed;left:0;right:0;bottom:calc(52px + env(safe-area-inset-bottom));display:none;gap:8px;padding:10px 16px;background:var(--surf2);border-top:1px solid var(--line);align-items:center;z-index:5}
+#selbar.on{display:flex}
+#selbar span{flex:1}
+#selbar button{padding:10px 14px;border-radius:8px;font:inherit;border:1px solid var(--line);background:none;color:var(--text)}
+#selbar .del{border-color:#7A3B3B;color:#E8A2A2}
+#crAdd{margin-top:14px}
+#crAdd button{flex:none;padding:0 18px;border-radius:10px;border:0;background:var(--mid);color:var(--core);font:inherit;font-weight:700}
+/* song sheet */
+#ov{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:10}
+#ov.on{display:flex}
+#ov header{display:flex;align-items:center;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line)}
+#ov header button{background:none;border:0;color:var(--bright);font:inherit;font-size:30px;line-height:1;padding:0 10px 0 0}
+#ov .body{flex:1;overflow-y:auto;padding:4px 16px 40px}
+.tog{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;color:var(--text);font:inherit;padding:16px 0 4px;text-align:left}
+.tog i{position:relative;flex:none;width:46px;height:28px;border-radius:14px;background:var(--surf2);border:1px solid var(--line)}
+.tog i::after{content:'';position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:var(--mute);transition:left .15s}
+.tog[aria-pressed="true"] i{background:var(--deep);border-color:var(--bright)}
+.tog[aria-pressed="true"] i::after{left:22px;background:var(--core)}
+.tog small{display:block;color:var(--mute);font-size:13px}
+/* dig */
+body.digon main{padding-bottom:14px}
+#dig.on{display:flex;flex-direction:column;gap:10px;height:100%}
+.dr{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--surf);border-radius:14px;border-top:6px solid var(--mid);padding:12px 16px 10px;touch-action:pan-y;user-select:none;-webkit-user-select:none;overflow:hidden}
+.dr.pend{outline:2px solid var(--bright);outline-offset:-2px}
+.dr .lv{font-size:13px;color:var(--mute)}
+.dr .card{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.dr .n{font-size:24px;font-weight:700;color:var(--core);line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.dr .crumb{font-size:15px;margin-top:4px}
+.dr .note{color:#CFCFCF;font-size:15px;margin-top:8px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:pre-wrap}
+.dr .ft{display:flex;align-items:center;gap:8px}
+.dr .ft span{flex:1;text-align:center;font-size:13px;color:var(--mute)}
+.dr .ft button{background:none;border:0;color:var(--bright);font:inherit;font-size:28px;line-height:1;padding:2px 14px}
+.dr .empty{padding:0;margin:auto 0;font-size:15px}
+#toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--core);color:#1A1024;padding:10px 16px;border-radius:10px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
+#toast.on{opacity:1}
+:focus-visible{outline:2px solid var(--bright);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){#toast,.tog i::after{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <section class="tab on" id="capture">
+    <h1>Capture</h1>
+    <label for="cArtist">Artist</label>
+    <input id="cArtist" list="artists" autocomplete="off" placeholder="Name, or whatever you remember">
+    <datalist id="artists"></datalist>
+    <datalist id="albums"></datalist>
+    <label for="cAlbum">Album</label>
+    <input id="cAlbum" list="albums" autocomplete="off" placeholder="Optional">
+    <label for="cSong">Song</label>
+    <div class="inrow"><input id="cSong" autocomplete="off" placeholder="Optional"><button class="pill" id="cPend" aria-pressed="false">Pending</button></div>
+    <button class="btn" id="cSave">Archive</button>
+    <p class="hint">Existing artists and albums are reused, so new songs land in the right place.</p>
+  </section>
+
+  <section class="tab" id="crate">
+    <div id="crTop">
+      <input id="q" type="search" placeholder="Search artists, albums, songs" autocomplete="off">
+      <div class="chips" id="tagchips"></div>
+    </div>
+    <div class="head" id="crHead">
+      <button id="crUp" aria-label="Up one level">‹</button>
+      <div class="hb"><div class="crumb" id="crumb"></div><input class="nm" id="crName" aria-label="Name"></div>
+    </div>
+    <div class="chips wrap" id="aTags"></div>
+    <div class="list" id="list"></div>
+    <div class="inrow" id="crAdd"><input id="addIn" autocomplete="off"><button id="addBtn">Add</button></div>
+    <p class="hint" id="crateHint">Long-press to select.</p>
+  </section>
+
+  <section class="tab" id="dig">
+    <div class="dr" data-lv="artist"></div>
+    <div class="dr" data-lv="album"></div>
+    <div class="dr" data-lv="song"></div>
+  </section>
+
+  <section class="tab" id="settings">
+    <h1 style="color:var(--core)">Settings</h1>
+    <h2>How to use</h2>
+    <p>Capture: type an artist, and an album and song if you have them. Tap Pending for recommendations you haven't heard yet.</p>
+    <p>Crate: artists, then their albums, then songs. Songs without an album sit under the artist. Tap a song for its note. The circle on a song marks it pending; a violet outline shows pending songs inside. The bar on each row goes from bright to dim the longer since you opened it.</p>
+    <p>Dig: three rows for artists, albums and songs, each starting with what you've opened least recently. Swipe a row or use its arrows. Tap an artist or album to mark it revisited; tap a song to open it.</p>
+    <h2>Bug notes</h2>
+    <textarea id="bugs" placeholder="What's broken or annoying"></textarea>
+    <hr>
+    <p class="hint">Echo version <span id="ver"></span></p>
+    <button class="btn ghost" id="fUpdate">Force update</button>
+    <button class="btn ghost" id="exp">Export Echo</button>
+    <button class="btn ghost" id="res">Restore Echo</button>
+    <input type="file" id="resFile" accept="application/json,.json" hidden>
+    <button class="btn danger" id="wipe">Wipe all Echo data</button>
+  </section>
+</main>
+
+<div id="selbar"><span id="selN"></span><button id="selCancel">Cancel</button><button class="del" id="selDel">Delete</button></div>
+
+<nav>
+  <button data-t="capture" class="on">Capture</button>
+  <button data-t="crate">Crate</button>
+  <button data-t="dig">Dig</button>
+  <button data-t="settings">Settings</button>
+</nav>
+
+<div id="ov">
+  <header><button id="ovClose" aria-label="Close">‹</button><div class="hb" style="flex:1;min-width:0"><div class="crumb" id="sCrumb"></div><input class="nm" id="sName" aria-label="Song name"></div></header>
+  <div class="body">
+    <button class="tog" id="sPend" aria-pressed="false"><i></i><span>Pending<small>Recommended, not heard yet</small></span></button>
+    <h2>Notes</h2>
+    <textarea id="sNote" placeholder="Anything about this song"></textarea>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const APP = 'echo';
+const VERSION = 4;
+const KEY = APP + ':data';
+const BUGS = APP + ':bugs';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const now = () => Date.now();
+const same = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
+const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+const findByName = (arr, n) => arr.find(x => same(x.name, n));
+
+/* ---------- storage ---------- */
+function write(k, v) {
+  try { localStorage.setItem(k, v); if (localStorage.getItem(k) !== v) throw 0; return true; }
+  catch (e) { toast('Save failed. Export your data now.'); return false; }
+}
+function load() {
+  let d;
+  try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  if (d && Array.isArray(d.artists)) return d;
+  if (d && Array.isArray(d.cards)) return migrate(d);
+  return { artists: [] };
+}
+// v1/v2 flat cards -> artist > album > song tree
+function migrate(d) {
+  const artists = d.cards.map(c => {
+    const a = { id: c.id, name: c.name, tags: c.tags || [], created: c.created || now(), opened: c.opened || now(), albums: [], songs: [] };
+    (c.entries || []).forEach(e => {
+      const sn = e.song || e.title || '', an = e.album || '', t = e.added || now();
+      let target = a.songs;
+      if (an) {
+        let A = findByName(a.albums, an);
+        if (!A) { A = { id: uid(), name: an, created: t, opened: t, songs: [] }; a.albums.push(A); }
+        target = A.songs;
+      }
+      if (sn) target.push({ id: e.id || uid(), name: sn, note: e.where ? 'Heard: ' + e.where : '', pending: !!c.pending, created: t, opened: t });
+    });
+    const all = songsOf(a);
+    if (c.note && all[0]) all[0].note = c.note + (all[0].note ? '\n' + all[0].note : '');
+    return a;
+  });
+  const nd = { artists };
+  write(KEY, JSON.stringify(nd));
+  return nd;
+}
+let db = load();
+const save = () => write(KEY, JSON.stringify(db));
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+function ownKeys() {
+  const ks = [];
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith(APP + ':')) ks.push(k); }
+  return ks;
+}
+
+/* ---------- helpers ---------- */
+let toastT;
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); }
+function temp(t) {
+  const day = x => { const d = new Date(x); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const diff = Math.round((day(now()) - day(t)) / 864e5);
+  return diff <= 0 ? 'var(--hot)' : diff <= 2 ? 'var(--warm)' : diff < 5 ? 'var(--cool)' : 'var(--cold)';
+}
+function songsOf(a) { return [...a.albums.flatMap(x => x.songs), ...a.songs]; }
+const pendIn = songs => songs.some(s => s.pending);
+function setTog(el, on) { el.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+const togOn = el => el.getAttribute('aria-pressed') === 'true';
+
+/* ---------- tabs + back navigation ---------- */
+let tab = 'capture';
+function setTab(t) {
+  if (t === 'crate' && tab === 'crate') lvl = { a: null, al: null }; // tapping Crate again returns to artists
+  tab = t;
+  document.querySelectorAll('.tab').forEach(e => e.classList.toggle('on', e.id === t));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  document.body.classList.toggle('set', t === 'settings');
+  document.body.classList.toggle('digon', t === 'dig');
+  if (selecting) exitSel();
+  if (t === 'crate') renderCrate();
+  if (t === 'dig') startDig();
+  if (t === 'capture') fillArtists();
+  $('main').scrollTop = 0;
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+
+history.pushState({ echo: 1 }, '');
+addEventListener('popstate', () => {
+  const again = () => history.pushState({ echo: 1 }, '');
+  if (sheet) { closeSong(); again(); return; }
+  if (selecting) { exitSel(); again(); return; }
+  if (tab === 'crate' && lvl.a) { goUp(); again(); return; }
+  if (tab !== 'capture') { setTab('capture'); again(); return; }
+  history.back();
+});
+
+/* ---------- capture ---------- */
+function fillArtists() { $('#artists').innerHTML = [...db.artists].sort(byName).map(a => `<option value="${esc(a.name)}">`).join(''); }
+function fillAlbums() {
+  const a = findByName(db.artists, $('#cArtist').value);
+  $('#albums').innerHTML = a ? a.albums.map(x => `<option value="${esc(x.name)}">`).join('') : '';
+}
+function capture() {
+  const an = $('#cArtist').value.trim(), aln = $('#cAlbum').value.trim(), sn = $('#cSong').value.trim(), pend = togOn($('#cPend'));
+  if (!an) { toast('Add an artist, even a guess.'); $('#cArtist').focus(); return; }
+  let a = findByName(db.artists, an); const newA = !a;
+  if (!a) { a = { id: uid(), name: an, tags: [], created: now(), opened: now(), albums: [], songs: [] }; db.artists.push(a); }
+  a.opened = now();
+  let target = a.songs, A = null, newAl = false;
+  if (aln) {
+    A = findByName(a.albums, aln);
+    if (!A) { A = { id: uid(), name: aln, created: now(), opened: now(), songs: [] }; a.albums.push(A); newAl = true; }
+    A.opened = now(); target = A.songs;
+  }
+  let msg;
+  if (sn) {
+    let s = findByName(target, sn);
+    if (s) { if (pend) s.pending = true; msg = 'Already archived: ' + s.name; }
+    else { target.push({ id: uid(), name: sn, note: '', pending: pend, created: now(), opened: now() }); msg = 'Archived ' + sn; }
+  } else if (A) msg = newAl ? 'Archived ' + A.name : 'Already archived: ' + A.name;
+  else msg = newA ? 'Archived ' + a.name : 'Already archived: ' + a.name;
+  if (!save()) return;
+  $('#cArtist').value = $('#cAlbum').value = $('#cSong').value = '';
+  setTog($('#cPend'), false);
+  toast(msg); fillArtists(); $('#cArtist').focus();
+}
+$('#cSave').onclick = capture;
+$('#cPend').onclick = e => setTog(e.currentTarget, !togOn(e.currentTarget));
+$('#cArtist').onkeydown = e => { if (e.key === 'Enter') $('#cAlbum').focus(); };
+$('#cAlbum').onkeydown = e => { if (e.key === 'Enter') $('#cSong').focus(); };
+$('#cAlbum').onfocus = fillAlbums;
+$('#cSong').onkeydown = e => { if (e.key === 'Enter') capture(); };
+
+/* ---------- crate ---------- */
+let lvl = { a: null, al: null }, q = '', tagF = null, selecting = false;
+const sel = new Set();
+const curArtist = () => lvl.a && db.artists.find(x => x.id === lvl.a);
+const curAlbum = () => { const a = curArtist(); return a && lvl.al && a.albums.find(x => x.id === lvl.al); };
+
+function allTags() {
+  const m = new Map();
+  db.artists.forEach(a => a.tags.forEach(t => { if (!m.has(t.toLowerCase())) m.set(t.toLowerCase(), t); }));
+  return [...m.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+function matches(a) {
+  if (tagF && !a.tags.some(t => t.toLowerCase() === tagF)) return false;
+  if (!q) return true;
+  const hay = [a.name, ...a.tags, ...a.albums.map(x => x.name), ...songsOf(a).map(s => s.name + ' ' + s.note)].join(' ').toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+}
+function row(kind, o, pend) {
+  const right = kind === 'song'
+    ? `<button class="pb${o.pending ? ' on' : ''}" data-p="${o.id}" aria-label="Pending" aria-pressed="${o.pending}"></button>`
+    : '<span class="chev">›</span>';
+  return `<div class="row${sel.has(o.id) ? ' sel' : ''}${pend ? ' pend' : ''}" data-kind="${kind}" data-id="${o.id}"><div class="t" style="background:${temp(o.opened)}"></div><div class="b">${esc(o.name)}</div>${right}</div>`;
+}
+function renderCrate() {
+  let a = curArtist(), al = curAlbum();
+  if (lvl.a && !a) { lvl = { a: null, al: null }; a = null; }
+  if (lvl.al && !al) { lvl.al = null; al = null; }
+  const L = $('#list');
+  $('#crTop').style.display = a ? 'none' : 'block';
+  $('#crHead').style.display = a ? 'flex' : 'none';
+  $('#crAdd').style.display = a ? 'flex' : 'none';
+  $('#aTags').style.display = a && !al ? 'flex' : 'none';
+
+  if (!a) {
+    const tags = allTags();
+    if (tagF && !tags.some(t => t.toLowerCase() === tagF)) tagF = null;
+    $('#tagchips').innerHTML = tags.map(t => `<button class="chip${tagF === t.toLowerCase() ? ' on' : ''}" data-tag="${esc(t.toLowerCase())}">${esc(t)}</button>`).join('');
+    $('#tagchips').style.display = tags.length ? 'flex' : 'none';
+    const arts = db.artists.filter(matches).sort(byName);
+    L.innerHTML = arts.length ? arts.map(x => row('artist', x, pendIn(songsOf(x)))).join('')
+      : `<p class="empty">${db.artists.length ? 'Nothing matches.' : 'Your crate is empty. Capture something you liked.'}</p>`;
+    $('#crateHint').style.display = arts.length ? 'block' : 'none';
+    return;
+  }
+  if (!al) {
+    $('#crumb').textContent = '';
+    $('#crName').value = a.name;
+    $('#aTags').innerHTML = a.tags.map((t, i) => `<button class="chip" data-i="${i}">${esc(t)}<span class="x">×</span></button>`).join('') + '<button class="chip add" id="tagAdd">+ Tag</button>';
+    const albums = [...a.albums].sort(byName);
+    let h = albums.map(x => row('album', x, pendIn(x.songs))).join('');
+    if (a.songs.length) h += (albums.length ? '<div class="grp">Songs</div>' : '') + a.songs.map(s => row('song', s, s.pending)).join('');
+    L.innerHTML = h || '<p class="empty">No albums yet. Add one below.</p>';
+    $('#addIn').placeholder = 'Add album';
+    $('#crateHint').style.display = h ? 'block' : 'none';
+    return;
+  }
+  $('#crumb').textContent = a.name;
+  $('#crName').value = al.name;
+  L.innerHTML = al.songs.length ? al.songs.map(s => row('song', s, s.pending)).join('') : '<p class="empty">No songs yet. Add one below.</p>';
+  $('#addIn').placeholder = 'Add song';
+  $('#crateHint').style.display = al.songs.length ? 'block' : 'none';
+}
+function goUp() { if (selecting) exitSel(); if (lvl.al) lvl.al = null; else lvl.a = null; renderCrate(); $('main').scrollTop = 0; }
+function enter(kind, id) {
+  const a = curArtist();
+  if (kind === 'artist') { const x = db.artists.find(y => y.id === id); x.opened = now(); lvl = { a: id, al: null }; }
+  else if (kind === 'album') { const x = a.albums.find(y => y.id === id); x.opened = now(); lvl.al = id; }
+  else { openSong(id); return; }
+  save(); renderCrate(); $('main').scrollTop = 0;
+}
+$('#crUp').onclick = goUp;
+$('#q').oninput = e => { q = e.target.value.trim(); renderCrate(); };
+$('#tagchips').onclick = e => { const b = e.target.closest('.chip'); if (!b) return; tagF = tagF === b.dataset.tag ? null : b.dataset.tag; renderCrate(); };
+$('#crName').onchange = e => {
+  const n = e.target.value.trim(), o = curAlbum() || curArtist();
+  if (!n) { e.target.value = o.name; return; }
+  o.name = n; save(); e.target.blur();
+};
+$('#crName').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
+$('#aTags').onclick = e => {
+  const a = curArtist(), b = e.target.closest('.chip'); if (!b) return;
+  if (b.id === 'tagAdd') {
+    const t = (prompt('New tag') || '').trim(); if (!t) return;
+    if (!a.tags.some(x => same(x, t))) a.tags.push(t);
+  } else a.tags.splice(+b.dataset.i, 1);
+  save(); renderCrate();
+};
+function addHere() {
+  const n = $('#addIn').value.trim(); if (!n) return;
+  const a = curArtist(), al = curAlbum();
+  const arr = al ? al.songs : a.albums;
+  if (findByName(arr, n)) { toast('Already here'); return; }
+  arr.push(al ? { id: uid(), name: n, note: '', pending: false, created: now(), opened: now() }
+              : { id: uid(), name: n, created: now(), opened: now(), songs: [] });
+  save(); $('#addIn').value = ''; renderCrate();
+}
+$('#addBtn').onclick = addHere;
+$('#addIn').onkeydown = e => { if (e.key === 'Enter') addHere(); };
+
+function findSong(id) {
+  for (const a of db.artists) {
+    for (const al of a.albums) { const s = al.songs.find(x => x.id === id); if (s) return { a, al, s }; }
+    const s = a.songs.find(x => x.id === id); if (s) return { a, al: null, s };
+  }
+  return null;
+}
+
+/* selection */
+function enterSel() { selecting = true; $('#selbar').classList.add('on'); }
+function exitSel() { selecting = false; sel.clear(); $('#selbar').classList.remove('on'); if (tab === 'crate') renderCrate(); }
+function toggleSel(id) { sel.has(id) ? sel.delete(id) : sel.add(id); $('#selN').textContent = sel.size + ' selected'; renderCrate(); }
+$('#selCancel').onclick = exitSel;
+$('#selDel').onclick = () => {
+  if (!sel.size) return;
+  const a = curArtist(), al = curAlbum();
+  const nested = !al ? ' Albums and artists take their songs with them.' : '';
+  if (!confirm(`Delete ${sel.size} item${sel.size > 1 ? 's' : ''}?${nested} This can't be undone.`)) return;
+  if (!a) db.artists = db.artists.filter(x => !sel.has(x.id));
+  else if (!al) { a.albums = a.albums.filter(x => !sel.has(x.id)); a.songs = a.songs.filter(x => !sel.has(x.id)); }
+  else al.songs = al.songs.filter(x => !sel.has(x.id));
+  save(); exitSel();
+};
+
+const list = $('#list');
+let lpT = null, lpFired = false, lpX = 0, lpY = 0;
+list.addEventListener('pointerdown', e => {
+  if (e.target.closest('.pb')) return;
+  const r = e.target.closest('.row'); if (!r) return;
+  lpFired = false; lpX = e.clientX; lpY = e.clientY;
+  lpT = setTimeout(() => { lpFired = true; lpT = null; if (!selecting) enterSel(); toggleSel(r.dataset.id); if (navigator.vibrate) navigator.vibrate(15); }, 500);
+});
+list.addEventListener('pointermove', e => { if (lpT && (Math.abs(e.clientX - lpX) > 10 || Math.abs(e.clientY - lpY) > 10)) { clearTimeout(lpT); lpT = null; } });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => list.addEventListener(ev, () => { clearTimeout(lpT); lpT = null; }));
+list.addEventListener('contextmenu', e => e.preventDefault());
+list.addEventListener('click', e => {
+  const p = e.target.closest('.pb');
+  if (p && !selecting) { const f = findSong(p.dataset.p); if (f) { f.s.pending = !f.s.pending; save(); renderCrate(); } return; }
+  const r = e.target.closest('.row'); if (!r) return;
+  if (lpFired) { lpFired = false; return; }
+  selecting ? toggleSel(r.dataset.id) : enter(r.dataset.kind, r.dataset.id);
+});
+
+/* ---------- song sheet ---------- */
+let sheet = null, noteT;
+function openSong(id) {
+  const f = findSong(id); if (!f) return;
+  sheet = f; f.s.opened = now(); save();
+  $('#sCrumb').textContent = f.a.name + (f.al ? ' › ' + f.al.name : '');
+  $('#sName').value = f.s.name;
+  $('#sNote').value = f.s.note;
+  setTog($('#sPend'), f.s.pending);
+  $('#ov').classList.add('on');
+}
+function closeSong() {
+  if (sheet) { clearTimeout(noteT); sheet.s.note = $('#sNote').value; const n = $('#sName').value.trim(); if (n) sheet.s.name = n; save(); }
+  sheet = null; $('#ov').classList.remove('on');
+  if (tab === 'crate') renderCrate();
+  if (tab === 'dig') renderDig();
+}
+$('#ovClose').onclick = closeSong;
+$('#sName').onchange = e => { const n = e.target.value.trim(); if (!n) { e.target.value = sheet.s.name; return; } sheet.s.name = n; save(); };
+$('#sName').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
+$('#sNote').oninput = e => { clearTimeout(noteT); noteT = setTimeout(() => { sheet.s.note = e.target.value; save(); }, 300); };
+$('#sPend').onclick = () => { sheet.s.pending = !sheet.s.pending; save(); setTog($('#sPend'), sheet.s.pending); };
+
+/* ---------- dig: three independent rows ---------- */
+const LV = { artist: 'Artist', album: 'Album', song: 'Song' };
+const dig = { artist: { order: [], i: 0 }, album: { order: [], i: 0 }, song: { order: [], i: 0 } };
+function digItems(lv) {
+  if (lv === 'artist') return db.artists.map(a => ({ id: a.id, o: a, a }));
+  if (lv === 'album') return db.artists.flatMap(a => a.albums.map(al => ({ id: al.id, o: al, a, al })));
+  return db.artists.flatMap(a => [...a.albums.flatMap(al => al.songs.map(s => ({ id: s.id, o: s, a, al }))), ...a.songs.map(s => ({ id: s.id, o: s, a, al: null }))]);
+}
+const digFind = (lv, id) => digItems(lv).find(x => x.id === id);
+function startDig() {
+  for (const lv in dig) { dig[lv].order = digItems(lv).sort((x, y) => x.o.opened - y.o.opened).map(x => x.id); dig[lv].i = 0; }
+  renderDig();
+}
+function renderDig() { for (const lv in dig) renderRow(lv); }
+function renderRow(lv) {
+  const st = dig[lv], el = document.querySelector(`.dr[data-lv="${lv}"]`);
+  st.order = st.order.filter(id => digFind(lv, id));
+  if (!st.order.length) {
+    el.className = 'dr'; el.style.borderTopColor = '';
+    el.innerHTML = `<div class="lv">${LV[lv]}s</div><p class="empty">No ${lv}s yet.</p>`;
+    return;
+  }
+  if (st.i >= st.order.length) st.i = 0;
+  const x = digFind(lv, st.order[st.i]);
+  const crumb = lv === 'artist' ? x.a.tags.join(', ') : lv === 'album' ? x.a.name : x.a.name + (x.al ? ' › ' + x.al.name : '');
+  const pend = lv === 'song' ? x.o.pending : pendIn(lv === 'album' ? x.o.songs : songsOf(x.a));
+  el.className = 'dr' + (pend ? ' pend' : '');
+  el.style.borderTopColor = temp(x.o.opened);
+  el.innerHTML = `<div class="lv">${LV[lv]}</div>
+    <div class="card"><div class="n">${esc(x.o.name)}</div>${crumb ? `<div class="crumb">${esc(crumb)}</div>` : ''}${lv === 'song' && x.o.note ? `<div class="note">${esc(x.o.note)}</div>` : ''}</div>
+    <div class="ft"><button data-d="-1" aria-label="Previous">‹</button><span>${st.i + 1} of ${st.order.length}</span><button data-d="1" aria-label="Next">›</button></div>`;
+}
+function digMove(lv, d) { const st = dig[lv], n = st.order.length; if (!n) return; st.i = (st.i + d + n) % n; renderRow(lv); }
+function digTap(lv) {
+  const st = dig[lv]; if (!st.order.length) return;
+  const x = digFind(lv, st.order[st.i]); if (!x) return;
+  if (lv === 'song') { openSong(x.id); return; }
+  x.o.opened = now(); save(); renderRow(lv); toast('Marked ' + x.o.name + ' as revisited');
+}
+document.querySelectorAll('.dr').forEach(el => {
+  const lv = el.dataset.lv;
+  let sx = null, sy = null, swiped = false;
+  el.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; swiped = false; }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { swiped = true; digMove(lv, dx < 0 ? 1 : -1); }
+  });
+  el.addEventListener('click', e => {
+    if (swiped) { swiped = false; return; }
+    const b = e.target.closest('button[data-d]');
+    if (b) { digMove(lv, +b.dataset.d); return; }
+    if (e.target.closest('.card')) digTap(lv);
+  });
+});
+
+/* ---------- settings ---------- */
+$('#ver').textContent = VERSION;
+$('#bugs').value = localStorage.getItem(BUGS) || '';
+let bugT;
+$('#bugs').oninput = e => { clearTimeout(bugT); bugT = setTimeout(() => write(BUGS, e.target.value), 300); };
+$('#fUpdate').onclick = async () => {
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.unregister();
+    const ks = await caches.keys();
+    await Promise.all(ks.filter(k => k.startsWith(APP + '-')).map(k => caches.delete(k)));
+  } catch (e) {}
+  location.reload();
+};
+$('#exp').onclick = () => {
+  const keys = {}; ownKeys().forEach(k => keys[k] = localStorage.getItem(k));
+  const blob = new Blob([JSON.stringify({ app: APP, version: VERSION, exported: new Date().toISOString(), keys })], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `echo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Exported');
+};
+$('#res').onclick = () => $('#resFile').click();
+$('#resFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  let d;
+  try { d = JSON.parse(await f.text()); if (d.app !== APP || !d.keys) throw 0; }
+  catch (err) { toast('That file is not an Echo backup.'); return; }
+  if (!confirm('Replace all Echo data with this backup? What is here now will be gone.')) return;
+  ownKeys().forEach(k => localStorage.removeItem(k));
+  Object.entries(d.keys).forEach(([k, v]) => { if (k.startsWith(APP + ':')) write(k, v); });
+  db = load(); lvl = { a: null, al: null }; $('#bugs').value = localStorage.getItem(BUGS) || '';
+  toast('Restored');
+};
+$('#wipe').onclick = () => {
+  if (!confirm('Wipe all Echo data? Export first if you might want it back.')) return;
+  ownKeys().forEach(k => localStorage.removeItem(k));
+  db = { artists: [] }; lvl = { a: null, al: null }; $('#bugs').value = '';
+  toast('Wiped');
+};
+
+/* ---------- boot ---------- */
+fillArtists();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
+</script>
+</body>
+</html>
